@@ -14,7 +14,7 @@ from math import *
 def normale(theta,phi):
     # retourne le vecteur unitaire définit par (cos(theta)*sin(phi),sin(theta)*sin(phi),cos(phi))
     vN = [cos(theta)*sin(phi),sin(theta)*sin(phi),cos(phi)]
-    return vN
+    return np.array(vN).T
 
 def tens_to_mat(liste):
     res = []
@@ -25,7 +25,7 @@ def tens_to_mat(liste):
     res.append(ligne1)
     res.append(ligne2)
     res.append(ligne3)
-    return res
+    return np.array(res)
 
 def contTang(tens,vN):
     # calcul le vecteur contrainte tangentiell sur une facette de normale vN
@@ -41,8 +41,7 @@ def hydro(tens,instant):
     p = (tens[instant][0]+tens[instant][1]+tens[instant][2])/3
     return p
 
-tens = genereTens(100,2*pi,0.01,1)
-hydro(tens,0)
+
 
 def genereTens(sigma1,omega,pasTemps,fin):
   tens = np.array([sigma1,0,0,0,0,0])
@@ -55,7 +54,6 @@ def genereTens(sigma1,omega,pasTemps,fin):
     # cette fonction doit générer une matrice de 6 colonnes, chaque ligne étant le tenseur à un instant du cycle, et de la forme [sigma1*cos(omega*t),0,0,0,0,0]
   return tens
 
-genereTens(100,2*pi,0.01,1)
 
 def amplitudeTangMax(tens,instant):
     # cette fonction doit retourner pour UN instant une liste de deux éléments : le premier élément est la valeur max_n (norme de contTang) et le deuxième les angles du plan associés
@@ -115,7 +113,9 @@ vN = np.array([1/sqrt(2), 1/sqrt(2),0])
 resultat = contTang(tens,vN)
 print(resultat)
 
-
+genereTens(100,2*pi,0.01,1)
+tens = genereTens(100,2*pi,0.01,1)
+hydro(tens,0)
 # générer la matrice de 6 colonnes et Ntemps instants
 # construire la liste des points [amplitude de cisaillement max, pression hydrostatique] (point correspondant chacun à un instant)
 
