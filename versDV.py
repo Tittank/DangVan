@@ -24,6 +24,9 @@ def tens_to_mat(liste):
     return res
 
 # Cellule 5 : Fonction contTang
+def mat_to_tens(mat):
+    res = np.array([mat[0,0],mat[1,1],mat[2,2],mat[0,1],mat[0,2],mat[1,2]])
+    return res
 def contTang(tens,vN):
     # calcul le vecteur contrainte tangentiell sur une facette de normale vN
     M = tens_to_mat(tens)  # vecteur contrainte
@@ -35,8 +38,35 @@ def contTang(tens,vN):
 # Cellule 6 : Fonction hydro
 def hydro(tens):
     # cette fonction doit retourner la pression hydrostatique associée à ce tenseur (c'est pour un instant du cycle !)
-    p = (tens[0]+tens[1]+tens[2])/3
-    return p
+    if isinstance(tens, np.ndarray):
+        if tens.ndim == 2 and tens.shape == (3, 3):
+            return np.trace(tens) / 3
+        elif tens.ndim == 1:
+            if len(tens) == 6:
+                return (tens[0] + tens[1] + tens[2]) / 3
+            elif len(tens) == 3:
+                return np.sum(tens) / 3
+            else:
+                raise ValueError("Vector must be of length 3 or 6")
+        elif tens.ndim == 2:
+            # assume array of vectors
+            if tens.shape[1] not in [3, 6]:
+                raise ValueError("Each row must be length 3 or 6")
+            res = []
+            for i in range(tens.shape[0]):
+                row = tens[i]
+                if tens.shape[1] == 6:
+                    p = (row[0] + row[1] + row[2]) / 3
+                else:  # 3
+                    p = np.sum(row) / 3
+                res.append(p)
+            return np.array(res)
+        else:
+            raise ValueError("Unsupported tensor shape")
+    else:
+        # if list, convert
+        tens = np.array(tens)
+        return hydro(tens)
 
 # Cellule 7 : Fonction genereTens
 def genereTens(sigma1,omega,pasTemps,fin):
@@ -137,38 +167,7 @@ def traceNuage(points):
     plt.show()
 
 # Cellule 12 : Exécution et visualisation
-# points = nuage(100,2*pi,0.01,1)
-# traceNuage(points)
 
-# Tracer le diagramme de Dang Van avec les deux cas et la limite
-points_uniaxial = nuage(100, 2*pi, 0.01, 1)
-points_torsion = nuageOrt(50, 2*pi, 0.01, 1)  # tau_a = 50 for torsion
-
-plt.figure()
-plt.scatter(points_uniaxial[:, 0], points_uniaxial[:, 1], label='Traction-Compression')
-plt.scatter(points_torsion[:, 0], points_torsion[:, 1], label='Torsion')
-
-# Limite de fatigue : ligne droite reliant les maxima
-max_uniaxial = np.max(points_uniaxial[:, 1])
-max_torsion = np.max(points_torsion[:, 1])
-
-# Pour Dang Van, la ligne limite est tau = beta - alpha * p
-# Ici, simplifié : ligne de (0, max_torsion) à (max_p_uniaxial, 0) ou quelque chose
-# En pratique, alpha ≈ 0.3, beta ≈ max_torsion
-alpha = 0.3
-beta = max_torsion
-p_max = np.max(points_uniaxial[:, 0])
-p_line = np.linspace(0, p_max, 100)
-tau_line = beta - alpha * p_line
-plt.plot(p_line, tau_line, 'r-', label='Limite de fatigue')
-
-plt.xlabel("Pression hydrostatique")
-plt.ylabel("Amplitude de cisaillement max")
-plt.title("Diagramme de Dang Van")
-plt.legend()
-plt.grid(True)
-plt.savefig('dangvan_limite.png')
-# plt.show()
 
 
 
@@ -200,8 +199,21 @@ class DangVan:
     @staticmethod
     def hydro(tens):
         # cette fonction doit retourner la pression hydrostatique associée à ce tenseur (c'est pour un instant du cycle !)
-        p = (tens[0] + tens[1] + tens[2]) / 3
-        return p
+        if isinstance(tens, np.ndarray):
+            if tens.ndim == 2 and tens.shape == (3, 3):
+                return np.trace(tens) / 3
+            elif tens.ndim == 1:
+                if len(tens) == 6:
+                    return (tens[0] + tens[1] + tens[2]) / 3
+                elif len(tens) == 3:
+                    return np.sum(tens) / 3
+                else:
+                    raise ValueError("Vector must be of length 3 or 6")
+            else:
+                raise ValueError("Unsupported tensor shape for single tensor")
+        else:
+            tens = np.array(tens)
+            return DangVan.hydro(tens)
 
     @staticmethod
     def genereTens(sigma1, omega, pasTemps, fin):
@@ -297,3 +309,37 @@ class DangVan:
         plt.ylabel("amplitude de cisaillement max")
         plt.title("Nuage de points")
         plt.show()
+
+if __name__ == "__main__":
+    points = nuage(100,2*pi,0.01,1)
+    traceNuage(points)
+
+    # Tracer le diagramme de Dang Van avec les deux cas et la limite
+    points_uniaxial = nuage(100, 2*pi, 0.01, 1)
+    points_torsion = nuageOrt(50, 2*pi, 0.01, 1)  # tau_a = 50 for torsion
+
+    plt.figure()
+    plt.scatter(points_uniaxial[:, 0], points_uniaxial[:, 1], label='Traction-Compression')
+    plt.scatter(points_torsion[:, 0], points_torsion[:, 1], label='Torsion')
+
+    # Limite de fatigue : ligne droite reliant les maxima
+    max_uniaxial = np.max(points_uniaxial[:, 1])
+    max_torsion = np.max(points_torsion[:, 1])
+
+    # Pour Dang Van, la ligne limite est tau = beta - alpha * p
+    # Ici, simplifié : ligne de (0, max_torsion) à (max_p_uniaxial, 0) ou quelque chose
+    # En pratique, alpha ≈ 0.3, beta ≈ max_torsion
+    alpha = 0.3
+    beta = max_torsion
+    p_max = np.max(points_uniaxial[:, 0])
+    p_line = np.linspace(0, p_max, 100)
+    tau_line = beta - alpha * p_line
+    plt.plot(p_line, tau_line, 'r-', label='Limite de fatigue')
+
+    plt.xlabel("Pression hydrostatique")
+    plt.ylabel("Amplitude de cisaillement max")
+    plt.title("Diagramme de Dang Van")
+    plt.legend()
+    plt.grid(True)
+    plt.savefig('dangvan_limite.png')
+    plt.show()
