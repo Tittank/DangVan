@@ -7,7 +7,11 @@ import matplotlib.pyplot as plt
 from math import *
 import cmath
 import scipy.special as sp
+import pandas as pd
+import os
 
+
+os.makedirs('./datas', exist_ok=True)
 # Cellule 3 : Fonction normale
 def normale(theta,phi):
     # retourne le vecteur unitaire définit par (cos(theta)*sin(phi),sin(theta)*sin(phi),cos(phi))
@@ -90,6 +94,14 @@ def genereTensOrt(sigma1,omega,pasTemps,fin):
     # cette fonction doit générer une matrice de 6 colonnes, chaque ligne étant le tenseur à un instant du cycle, et de la forme [sigma1*cos(omega*t),0,0,0,0,0]
     return tens
 
+def save_tens_to_csv(tens, filename):
+    df = pd.DataFrame(tens, columns=['sigma_xx', 'sigma_yy', 'sigma_zz', 'sigma_xy', 'sigma_xz', 'sigma_yz'])
+    df.to_csv(filename, index=False)
+
+def load_tens_from_csv(filename):
+    df = pd.read_csv(filename)
+    tens = df.to_numpy()
+    return tens
 # Cellule 8 : Test de genereTens
 # genereTens(100,2*pi,0.01,1)
 
@@ -131,7 +143,7 @@ def nuage(sigma1,omega,pasTemps,fin):
     pression hydrostatique
     """
     points = np.array([0,0])
-    tensTot = genereTens(sigma1,omega,pasTemps,fin)
+    tensTot = load_tens_from_csv('./datas/tensors_uniaxial.csv')
     for t in range(int(fin/pasTemps)):
         tens = tensTot[t]
         cisMax,_ = amplitudeTangMax(tens)
@@ -148,7 +160,7 @@ def nuageOrt(sigma1,omega,pasTemps,fin):
     pression hydrostatique
     """
     points = np.array([0,0])
-    tensTot = genereTensOrt(sigma1,omega,pasTemps,fin)
+    tensTot = load_tens_from_csv('./datas/tensors_torsion.csv')
     for t in range(int(fin/pasTemps)):
         tens = tensTot[t]
         cisMax,_ = amplitudeTangMax(tens)
@@ -170,7 +182,8 @@ def traceNuage(points):
 
 
 
-
+'''
+DangVan class for calculating stress tensors and related properties.
 class DangVan:
     @staticmethod
     def normale(theta, phi):
@@ -277,7 +290,7 @@ class DangVan:
         pression hydrostatique
         """
         points = np.array([0, 0])
-        tensTot = DangVan.genereTens(sigma1, omega, pasTemps, fin)
+        tensTot = DangVan.load_tens_from_csv('./datas/tensors_uniaxial.csv')
         for t in range(int(fin / pasTemps)):
             tens = tensTot[t]
             cisMax, _ = DangVan.amplitudeTangMax(tens)
@@ -293,7 +306,7 @@ class DangVan:
         pression hydrostatique
         """
         points = np.array([0, 0])
-        tensTot = DangVan.genereTensOrt(sigma1, omega, pasTemps, fin)
+        tensTot = load_tens_from_csv('./datas/tensors_torsion.csv')
         for t in range(int(fin / pasTemps)):
             tens = tensTot[t]
             cisMax, _ = DangVan.amplitudeTangMax(tens)
@@ -309,6 +322,8 @@ class DangVan:
         plt.ylabel("amplitude de cisaillement max")
         plt.title("Nuage de points")
         plt.show()
+
+'''
 
 if __name__ == "__main__":
     points = nuage(100,2*pi,0.01,1)
